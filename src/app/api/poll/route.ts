@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Obter o ID da tarefa da query string
+    // Obter a URL de polling da query string
     const { searchParams } = new URL(request.url);
-    const taskId = searchParams.get('taskId');
+    const pollUrl = searchParams.get('pollUrl');
     
-    if (!taskId) {
+    if (!pollUrl) {
       return NextResponse.json(
-        { error: 'ID da tarefa não fornecido' },
+        { error: 'URL de polling não fornecida' },
         { status: 400 }
       );
     }
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    // Fazer a requisição para a API da Black Forest Labs para verificar o status
-    const response = await fetch(`https://api.bfl.ai/v1/flux-kontext-pro/${taskId}`, options);
+    // Fazer a requisição para a API da Black Forest Labs usando a pollUrl
+    const response = await fetch(pollUrl, options); // Usa a pollUrl diretamente
     
     if (!response.ok) {
       const errorText = await response.text();

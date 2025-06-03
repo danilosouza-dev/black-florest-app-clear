@@ -43,7 +43,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   
   // Estado para armazenar o resultado da API
-  const [apiResult, setApiResult] = useState<ApiResult | null>(null);
+  const [apiResult, setApiResult] = useState<ApiResult | null>(null); // Estado para armazenar resultado inicial da API
   
   // Estado para armazenar a imagem gerada
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -109,13 +109,10 @@ export default function Home() {
 
   // Função para abrir o seletor de arquivo
   const handleChooseFile = () => {
-    fileInputRef.current?.click();
-  };
-
-  // Função para fazer polling do resultado da API
-  const pollForResult = async (taskId: string): Promise<ApiResult | null> => {
+    fileInputRef.current?.click()  // Função para fazer polling do resultado da API
+  const pollForResult = async (pollUrl: string): Promise<ApiResult | null> => {
     try {
-      addLog(`Iniciando polling para o ID da tarefa: ${taskId}`);
+      addLog(`Iniciando polling para a URL: ${pollUrl}`);
       
       const maxAttempts = 30; // Máximo de tentativas de polling
       let attempts = 0;
@@ -123,46 +120,48 @@ export default function Home() {
       while (attempts < maxAttempts) {
         attempts++;
         
-        const response = await fetch(`/api/poll?taskId=${taskId}`);
+        // Modificado para usar a URL de polling diretamente via API Route
+        const response = await fetch(`/api/poll?pollUrl=${encodeURIComponent(pollUrl)}`);
         
         if (!response.ok) {
-          addLog(`Erro no polling: ${response.status} ${response.statusText}`);
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Espera 2 segundos antes de tentar novamente
+          const errorData = await response.json().catch(() => ({ error: `Erro no polling: ${response.status} ${response.statusText}` }));
+          addLog(`Erro no polling: ${errorData.error || response.statusText}`);
+          // Se for 404, pode ser que a tarefa ainda não esteja pronta ou o ID esteja errado
+          if (response.status === 404) {
+             addLog("Tarefa não encontrada ou ainda não iniciada na API. Tentando novamente...");
+          }
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Espera 3 segundos
           continue;
         }
         
         const result = await response.json();
         addLog(`Resposta do polling: ${JSON.stringify(result)}`);
         
-        // Verifica se o processamento foi concluído
-        if (result.status === 'completed') {
-          addLog("Processamento concluído com sucesso!");
-          let imageSrc = result.output_url || result.output;
-          // Verifica se é base64 e adiciona o prefixo se necessário
-          if (imageSrc && !imageSrc.startsWith("http") && !imageSrc.startsWith("data:image")) {
-            // Assume PNG baseado no pedido do usuário, mas pode precisar de ajuste
-            imageSrc = `data:image/png;base64,${imageSrc}`;
-          }
-          setGeneratedImage(imageSrc);
+        // Verifica se o processamento foi concluído (status "Ready" conforme JSON do usuário)
+        if (result.status === 'Ready' && result.result?.sample) {
+          addLog('Processamento concluído com sucesso!');
+          setGeneratedImage(result.result.sample); // Pega a URL do campo result.sample
           return result;
         } else if (result.status === 'failed') {
-          addLog(`Processamento falhou: ${result.error || 'Erro desconhecido'}`);
+          addLog(`Processamento falhou: ${result.error || result.details || 'Erro desconhecido'}`);
           return null;
+        } else if (result.status === 'processing' || result.status === 'pending') {
+           addLog(`Status atual: ${result.status}. Tentando novamente em 3 segundos...`);
+        } else {
+           addLog(`Status inesperado: ${result.status}. Tentando novamente em 3 segundos...`);
         }
         
-        addLog(`Status atual: ${result.status}. Tentando novamente em 2 segundos...`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Espera 2 segundos antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Espera 3 segundos
       }
       
-      addLog('Número máximo de tentativas de polling atingido');
+      addLog("Número máximo de tentativas de polling atingido.");
       return null;
     } catch (error) {
-      console.error('Erro ao fazer polling:', error);
-      addLog(`Erro ao fazer polling: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Erro durante o polling:", error);
+      addLog(`Erro fatal durante o polling: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   };
-
   // Função para enviar o formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,12 +213,12 @@ export default function Home() {
       setApiResult(result);
       addLog(`Requisição enviada com sucesso! Resposta da API Generate: ${JSON.stringify(result)}`); // Log da resposta completa
       
-      // Se a API retornar um ID de tarefa, inicia o polling
-      if (result.id) {
-        addLog(`ID da Tarefa recebido: ${result.id}. Iniciando polling...`); // Log explícito do ID
-        const resultData = await pollForResult(result.id);
+      // Se a API retornar um polling_url, inicia o polling
+      if (result.polling_url) {
+        addLog(`Polling URL recebida: ${result.polling_url}. Iniciando polling...`);
+        const resultData = await pollForResult(result.polling_url); // Passa a polling_url
         if (resultData) {
-          setApiResult((prev: ApiResult | null) => ({ ...prev || {}, ...resultData }));
+          // O resultado final já é tratado dentro de pollForResult
         }
       } else if (syncMode && result.output) {
         // Se estiver em modo síncrono e houver output direto
