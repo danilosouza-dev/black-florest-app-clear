@@ -212,11 +212,11 @@ export default function Home() {
       
       const result = await response.json();
       setApiResult(result);
-      addLog(`Requisição enviada com sucesso! ID: ${result.id}`);
+      addLog(`Requisição enviada com sucesso! Resposta da API Generate: ${JSON.stringify(result)}`); // Log da resposta completa
       
       // Se a API retornar um ID de tarefa, inicia o polling
       if (result.id) {
-        addLog(`Iniciando polling para o ID: ${result.id}`);
+        addLog(`ID da Tarefa recebido: ${result.id}. Iniciando polling...`); // Log explícito do ID
         const resultData = await pollForResult(result.id);
         if (resultData) {
           setApiResult((prev: ApiResult | null) => ({ ...prev || {}, ...resultData }));
