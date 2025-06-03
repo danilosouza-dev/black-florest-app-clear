@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Retornar o resultado da API
     const result = await response.json();
+    console.log(`Resposta da API BFL (Generate):`, JSON.stringify(result)); // Log detalhado da resposta
     return NextResponse.json(result);
   } catch (error) {
     console.error('Erro ao processar requisição:', error);
