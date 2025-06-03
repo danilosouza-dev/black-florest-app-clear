@@ -197,6 +197,7 @@ export default function Home() {
 
       addLog('Enviando requisição para a API...');
       
+      // Código real para produção com API Routes
       const response = await fetch('/api/generate', options);
       
       if (!response.ok) {
@@ -219,10 +220,10 @@ export default function Home() {
         addLog('Recebido resultado em modo síncrono');
         setGeneratedImage(result.output);
       }
+      setIsLoading(false);
     } catch (error) {
       console.error('Erro ao enviar requisição:', error);
       addLog(`Erro ao enviar requisição: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -579,14 +580,6 @@ export default function Home() {
                 alt="Imagem gerada" 
                 className="w-full h-full object-contain"
               />
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-                <button className="bg-black/50 text-white p-2 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polygon points="10 8 16 12 10 16 10 8" />
-                  </svg>
-                </button>
-              </div>
             </div>
           ) : (
             <div className="text-center text-secondary-foreground">

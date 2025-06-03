@@ -1,41 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+// API key da Black Forest Labs
+const API_KEY = process.env.API_KEY;
+
+export async function POST(request: NextRequest) {
   try {
-    const payload = await req.json();
-    const apiKey = '09555340-d26f-4299-9630-4c6ddf58251b';
+    const body = await request.json();
     
-    console.log('Recebendo solicitação para API da Black Forest Labs');
-    
-    // Configurar opções para a solicitação à API da Black Forest Labs
+    // Preparar o payload para a API da Black Forest Labs
+    const payload = {
+      prompt: body.prompt,
+      input_image: body.input_image,
+      seed: body.seed || 42,
+      aspect_ratio: body.aspect_ratio || "1:1",
+      output_format: body.output_format || "jpeg",
+      prompt_upsampling: body.prompt_upsampling || false,
+      safety_tolerance: body.safety_tolerance || 2
+    };
+
+    // Configurar a requisição para a API da Black Forest Labs
     const options = {
       method: 'POST',
       headers: {
-        'x-key': apiKey,
+        'x-key': API_KEY,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     };
 
-    console.log('Enviando solicitação para a API da Black Forest Labs');
-    
-    // Fazer a solicitação à API da Black Forest Labs
+    // Fazer a requisição para a API da Black Forest Labs
     const response = await fetch('https://api.bfl.ai/v1/flux-kontext-pro', options);
     
     if (!response.ok) {
-      throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro na API da Black Forest Labs:', errorText);
+      return NextResponse.json(
+        { error: `Erro na API: ${response.status} ${response.statusText}` },
+        { status: response.status }
+      );
     }
-    
-    const data = await response.json();
-    
-    console.log('Resposta recebida da API');
-    
-    // Retornar a resposta da API para o cliente
-    return NextResponse.json(data);
+
+    // Retornar o resultado da API
+    const result = await response.json();
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Erro no processamento:', error);
+    console.error('Erro ao processar requisição:', error);
     return NextResponse.json(
-      { error: 'Erro ao processar a solicitação' },
+      { error: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

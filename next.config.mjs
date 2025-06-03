@@ -6,7 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
+  // Removendo output: 'export' para permitir API Routes dinâmicas
 };
 
 export default nextConfig;

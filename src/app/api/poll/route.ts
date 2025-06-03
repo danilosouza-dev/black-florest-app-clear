@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const searchParams = req.nextUrl.searchParams;
+    // Obter o ID da tarefa da query string
+    const { searchParams } = new URL(request.url);
     const taskId = searchParams.get('taskId');
-    const apiKey = '09555340-d26f-4299-9630-4c6ddf58251b';
     
     if (!taskId) {
       return NextResponse.json(
@@ -13,32 +13,37 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    console.log(`Fazendo polling para o ID da tarefa: ${taskId}`);
+    // API key da Black Forest Labs
+    const API_KEY = '09555340-d26f-4299-9630-4c6ddf58251b';
     
-    // Construir a URL de polling com o ID da tarefa
-    const pollingUrl = `https://api.bfl.ai/v1/flux-kontext-pro/${taskId}`;
-    
-    // Fazer a solicitação à API da Black Forest Labs
-    const response = await fetch(pollingUrl, {
+    // Configurar a requisição para verificar o status da tarefa
+    const options = {
+      method: 'GET',
       headers: {
-        'x-key': apiKey
+        'x-key': API_KEY,
+        'Content-Type': 'application/json'
       }
-    });
+    };
+    
+    // Fazer a requisição para a API da Black Forest Labs para verificar o status
+    const response = await fetch(`https://api.bfl.ai/v1/flux-kontext-pro/${taskId}`, options);
     
     if (!response.ok) {
-      throw new Error(`Erro no polling: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Erro ao verificar status na API:', errorText);
+      return NextResponse.json(
+        { error: `Erro na API: ${response.status} ${response.statusText}` },
+        { status: response.status }
+      );
     }
     
-    const data = await response.json();
-    
-    console.log('Resposta de polling recebida');
-    
-    // Retornar a resposta da API para o cliente
-    return NextResponse.json(data);
+    // Retornar o resultado da verificação de status
+    const result = await response.json();
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Erro no polling:', error);
+    console.error('Erro ao processar requisição de polling:', error);
     return NextResponse.json(
-      { error: 'Erro ao fazer polling' },
+      { error: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
