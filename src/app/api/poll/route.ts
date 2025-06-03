@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
     
     // API key da Black Forest Labs
-    const API_KEY = '09555340-d26f-4299-9630-4c6ddf58251b';
+    const API_KEY = process.env.API_KEY;
     
     // Configurar a requisição para verificar o status da tarefa
     const options = {

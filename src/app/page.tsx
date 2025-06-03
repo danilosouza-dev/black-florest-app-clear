@@ -136,8 +136,14 @@ export default function Home() {
         
         // Verifica se o processamento foi concluído
         if (result.status === 'completed') {
-          addLog('Processamento concluído com sucesso!');
-          setGeneratedImage(result.output_url || result.output);
+          addLog("Processamento concluído com sucesso!");
+          let imageSrc = result.output_url || result.output;
+          // Verifica se é base64 e adiciona o prefixo se necessário
+          if (imageSrc && !imageSrc.startsWith("http") && !imageSrc.startsWith("data:image")) {
+            // Assume PNG baseado no pedido do usuário, mas pode precisar de ajuste
+            imageSrc = `data:image/png;base64,${imageSrc}`;
+          }
+          setGeneratedImage(imageSrc);
           return result;
         } else if (result.status === 'failed') {
           addLog(`Processamento falhou: ${result.error || 'Erro desconhecido'}`);
