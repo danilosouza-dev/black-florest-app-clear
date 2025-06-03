@@ -109,7 +109,10 @@ export default function Home() {
 
   // Função para abrir o seletor de arquivo
   const handleChooseFile = () => {
-    fileInputRef.current?.click()  // Função para fazer polling do resultado da API
+    fileInputRef.current?.click();
+  };
+
+  // Função para fazer polling do resultado da API
   const pollForResult = async (pollUrl: string): Promise<ApiResult | null> => {
     try {
       addLog(`Iniciando polling para a URL: ${pollUrl}`);
